@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OP - Controle de Efetivo & Gestão Operacional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Tela de Login -->
+    <div id="screenLogin" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-slate-200">
+            <div class="text-center mb-6">
+                <div class="inline-flex p-3 bg-blue-50 border border-blue-200 rounded-2xl text-blue-600 mb-3">
+                    <i data-lucide="shield-check" class="w-10 h-10"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">OP - Gestão Operacional</h2>
+                <p class="text-xs text-slate-500 mt-1">Acesso Restrito ao Sistema Integrado</p>
+            </div>
+            
+            <form onsubmit="realizarLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Usuário</label>
+                    <input type="text" id="loginUsuario" required class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" value="admin">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Senha</label>
+                    <input type="password" id="loginSenha" required class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" value="admin123">
+                </div>
+                <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-150 text-sm">
+                    Entrar no Sistema
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500 text-center space-y-1">
+                <p><b>Administrador Master:</b> admin / admin123 (Total)</p>
+                <p><b>Convidado:</b> convidado / 123456 (Apenas Visualização)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aplicação Principal -->
+    <div id="app" class="flex-1 flex flex-col hidden">
+        <header class="bg-[#111827] text-white shadow-md">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-white border border-slate-300 px-2.5 py-1 rounded font-black text-slate-900 text-xs shadow">PUMA</div>
+                        <div class="bg-white border border-slate-300 px-2.5 py-1 rounded font-black text-blue-900 text-xs shadow">ÔMEGA</div>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
+                            <h1 class="text-base font-bold tracking-tight">Controle de Efetivo & Gestão Operacional</h1>
+                            <span id="badgePerfil" class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white uppercase">Admin Master</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 pl-4">RH, Documentos, Treinamentos, Férias, Saúde e Débitos</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="abrirModalEditarAcessos()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                        <i data-lucide="key-round" class="w-3.5 h-3.5 text-blue-400"></i> Menu Editar Acessos
+                    </button>
+                    <button onclick="exportarDados()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-blue-400"></i> Exportar Dados
+                    </button>
+                    <button onclick="fazerBackup()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                        <i data-lucide="database" class="w-3.5 h-3.5 text-emerald-400"></i> Backup (JSON)
+                    </button>
+                    <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-amber-400"></i> Restaurar Backup
+                        <input type="file" id="inputRestaurar" accept=".json" onchange="restaurarBackup(event)" class="hidden">
+                    </label>
+                    <button onclick="fazerLogout()" class="bg-rose-900 hover:bg-rose-800 text-rose-200 px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-800 transition">
+                        Sair
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navegação por Abas -->
+        <div class="bg-white border-b border-slate-200 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 flex space-x-8 overflow-x-auto text-xs font-semibold">
+                <button onclick="mudarAba('efetivo')" id="btnTabEfetivo" class="py-3 px-1 border-b-2 font-bold flex items-center gap-2 border-blue-600 text-blue-600 whitespace-nowrap">
+                    <i data-lucide="users" class="w-4 h-4"></i> Efetivo & Documentação RH
+                </button>
+                <button onclick="mudarAba('treinamentos')" id="btnTabTreinamentos" class="py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">
+                    <i data-lucide="award" class="w-4 h-4"></i> Controle de Treinamentos (10+ NRs)
+                </button>
+                <button onclick="mudarAba('saude')" id="btnTabSaude" class="py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">
+                    <i data-lucide="heart-pulse" class="w-4 h-4"></i> Plano de Saúde
+                </button>
+                <button onclick="mudarAba('ferias')" id="btnTabFerias" class="py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">
+                    <i data-lucide="palmtree" class="w-4 h-4"></i> Programação & Cálculo de Férias
+                </button>
+                <button onclick="mudarAba('avarias')" id="btnTabAvarias" class="py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i> Débitos, Multas & Avarias
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Container -->
+        <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+            
+            <!-- ABA 1: EFETIVO -->
+            <div id="tabEfetivo" class="space-y-6">
+                <!-- 8 Cards Coloridos -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                    <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Efetivo Total</span>
+                        <h3 id="statTotal" class="text-xl font-black text-slate-800 mt-1">0</h3>
+                    </div>
+                    <div class="bg-[#10B981] text-white p-3.5 rounded-xl shadow-sm flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-emerald-100 uppercase tracking-wider">Ativos</span>
+                        <h3 id="statAtivos" class="text-xl font-black mt-1">0</h3>
+                    </div>
+                    <div class="bg-[#FEF08A] text-amber-900 p-3.5 rounded-xl shadow-sm flex flex-col justify-between border border-amber-200">
+                        <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Férias</span>
+                        <h3 id="statFerias" class="text-xl font-black mt-1">0</h3>
+                    </div>
+                    <div class="bg-[#F97316] text-white p-3.5 rounded-xl shadow-sm flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-orange-100 uppercase tracking-wider">Afastado</span>
+                        <h3 id="statAfastado" class="text-xl font-black mt-1">0</h3>
+                    </div>
+                    <div class="bg-[#FB7185] text-white p-3.5 rounded-xl shadow-sm flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-rose-100 uppercase tracking-wider">Aviso</span>
+                        <h3 id="statAviso" class="text-xl font-black mt-1">0</h3>
+                    </div>
+                    <div class="bg-[#DC2626] text-white p-3.5 rounded-xl shadow-sm flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-red-100 uppercase tracking-wider">Demitido</span>
+                        <h3 id="statDemitido" class="text-xl font-black mt-1">0</h3>
+                    </div>
+                    <div class="bg-[#F0FDF4] text-blue-900 p-3.5 rounded-xl shadow-sm flex flex-col justify-between border border-blue-200">
+                        <span class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Experiência</span>
+                        <h3 id="statExperiencia" class="text-xl font-black mt-1">0</h3>
+                    </div>
+                    <div class="bg-[#FAF5FF] text-purple-900 p-3.5 rounded-xl shadow-sm flex flex-col justify-between border border-purple-200">
+                        <span class="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Pendências DOC</span>
+                        <h3 id="statPendencias" class="text-xl font-black mt-1">0</h3>
+                    </div>
+                </div>
+
+                <!-- Alertas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-rose-50 border-l-4 border-rose-500 p-4 rounded-r-xl shadow-sm flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+                            <div>
+                                <h4 class="text-xs font-bold text-rose-900">Atenção para Ficha, ASO, CNH e Treinamentos</h4>
+                                <p class="text-[11px] text-rose-700">Verifique colaboradores com documentação pendente ou vencida.</p>
+                            </div>
+                        </div>
+                        <button onclick="filtrarAlertas()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap">Ver Alertas</button>
+                    </div>
+
+                    <!-- Alerta de Férias Atualizado: Apenas quem está de férias no momento, dias, saída e retorno -->
+                    <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex items-center gap-3">
+                        <span class="w-3 h-3 rounded-full bg-amber-500 animate-ping"></span>
+                        <div class="w-full">
+                            <h4 class="text-xs font-bold text-amber-900 flex items-center gap-1.5"><i data-lucide="palmtree" class="w-3.5 h-3.5 text-amber-700"></i> Colaboradores Atualmente em Férias</h4>
+                            <div id="containerAlertaFerias" class="text-[11px] text-amber-800 mt-0.5 space-y-0.5"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="text-xs font-bold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i> Efetivo por Empresa</h3>
+                        <div class="h-56 relative flex justify-center"><canvas id="graficoEmpresa"></canvas></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="text-xs font-bold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-600"></i> Situação Operacional do Efetivo</h3>
+                        <div class="h-56 relative flex justify-center"><canvas id="graficoStatus"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Efetivo -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-50">
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <h3 class="text-xs font-bold text-slate-800">Lista Completa de Colaboradores & Documentos</h3>
+                            <input type="text" id="inputBusca" oninput="filtrarTabela()" placeholder="Buscar por Nome..." class="px-3 py-1.5 border rounded-lg text-xs w-60">
+                        </div>
+                        <button id="btnNovoColab" onclick="abrirModalColab()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Novo Colaborador
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wider">
+                                    <th class="p-3">Foto</th>
+                                    <th class="p-3">Funcionário / Matrícula / CPF</th>
+                                    <th class="p-3">Empresa / Função</th>
+                                    <th class="p-3">Documentos (Ficha, ASO, CNH)</th>
+                                    <th class="p-3">Status</th>
+                                    <th id="thAcoesEfetivo" class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaEfetivo" class="divide-y divide-slate-100 text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: TREINAMENTOS PERSONALIZÁVEIS -->
+            <div id="tabTreinamentos" class="space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="award" class="w-5 h-5 text-blue-600"></i> Gestão de Treinamentos & NRs (Títulos Personalizáveis)
+                        </h3>
+                        <p class="text-[11px] text-slate-500">Adicione, edite ou remova os títulos dos treinamentos/áreas e lance as validades.</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <input type="text" id="buscaTreinamento" oninput="renderizarTreinamentos()" placeholder="Filtrar colaborador..." class="px-3 py-1.5 border rounded-lg text-xs w-48">
+                        <button onclick="abrirModalRegistrarTreinoLote()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow"><i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Registar Novo Treino</button>
+                        <button onclick="abrirModalGerenciarTitulos()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+                            <i data-lucide="settings" class="w-3.5 h-3.5 text-blue-400"></i> Titular / Gerenciar Treinamentos
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr id="theadTreinamentos" class="bg-slate-900 text-white text-[10px] font-bold uppercase">
+                                    <th class="p-3">Colaborador</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaTreinamentos" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 3: SAÚDE -->
+            <div id="tabSaude" class="space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div><h3 class="text-base font-bold text-slate-800">Controle de Plano de Saúde & Dependentes</h3></div>
+                    <button id="btnNovoSaude" onclick="abrirModalSaude()" class="bg-blue-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Cadastrar Plano de Saúde</button>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead><tr class="bg-slate-900 text-white text-[10px] font-bold uppercase"><th class="p-3">Colaborador</th><th class="p-3">Operadora</th><th class="p-3">Carteirinha</th><th class="p-3">Tipo</th><th class="p-3">Dependentes</th><th class="p-3">Valor (R$)</th><th id="thAcoesSaude" class="p-3 text-right">Ações</th></tr></thead>
+                        <tbody id="tabelaSaude" class="divide-y divide-slate-100 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ABA 4: FÉRIAS (Com cálculo automático de término e retorno) -->
+            <div id="tabFerias" class="space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="palmtree" class="w-5 h-5 text-amber-600"></i> Programação & Cálculo Automático de Férias</h3>
+                        <p class="text-[11px] text-slate-500">Informe a data de início e a quantidade de dias para calcular o término e retorno.</p>
+                    </div>
+                    <button id="btnNovaFerias" onclick="abrirModalFerias()" class="bg-blue-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Programar Férias</button>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead><tr class="bg-slate-900 text-white text-[10px] font-bold uppercase"><th class="p-3">Colaborador</th><th class="p-3">Data Saída (Início)</th><th class="p-3">Dias</th><th class="p-3">Data Término (Fim)</th><th class="p-3">Data Retorno</th><th class="p-3">Situação</th><th id="thAcoesFerias" class="p-3 text-right">Ações</th></tr></thead>
+                        <tbody id="tabelaFerias" class="divide-y divide-slate-100 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ABA 5: AVARIAS E DÉBITOS -->
+            <div id="tabAvarias" class="space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i> Controle de Débitos, Multas & Avarias</h3>
+                        <p class="text-[11px] text-slate-500">Gerenciamento de infrações, avarias de frota e descontos para relatório de folha.</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap justify-end">
+                        <button onclick="abrirImportacaoAvarias()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5"><i data-lucide="upload" class="w-3.5 h-3.5"></i> Importar Planilha</button>
+                        <button onclick="exportarRelatorioDebitos()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-400"></i> Relatório CSV</button>
+                        <button id="btnNovaAvaria" onclick="abrirModalAvaria()" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Registrar Multa / Avaria</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex flex-col lg:flex-row lg:items-end gap-3">
+                        <div class="flex-1 min-w-[220px]"><label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Buscar</label><input type="text" id="filtroAvariaBusca" oninput="renderizarAvarias()" placeholder="Colaborador, descrição ou nº do auto..." class="w-full border rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"></div>
+                        <div><label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">De</label><input type="date" id="filtroAvariaDe" onchange="renderizarAvarias()" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+                        <div><label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Até</label><input type="date" id="filtroAvariaAte" onchange="renderizarAvarias()" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+                        <div class="min-w-[190px]"><label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Categoria</label><select id="filtroAvariaTipo" onchange="renderizarAvarias()" class="w-full border rounded-lg px-3 py-2 text-xs bg-white"><option value="">Todas as categorias</option><option value="Multa de Trânsito">Multa de Trânsito</option><option value="Avaria de Veículo">Avaria de Veículo</option><option value="Anomalia Operacional">Anomalia Operacional</option><option value="Outros Débitos">Outros Débitos</option></select></div>
+                        <div class="min-w-[190px]"><label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Status</label><select id="filtroAvariaStatus" onchange="renderizarAvarias()" class="w-full border rounded-lg px-3 py-2 text-xs bg-white"><option value="">Todos os status</option><option value="Pendente Desconto">Pendente Desconto</option><option value="Descontado em Folha">Descontado em Folha</option><option value="Parcelado">Parcelado</option><option value="Cancelado / Abonado">Cancelado / Abonado</option></select></div>
+                        <button onclick="limparFiltrosAvarias()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 whitespace-nowrap"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5 inline mr-1"></i> Limpar</button>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between gap-3 text-[10px] text-slate-500"><span id="textoFiltroAvarias">Exibindo todos os registros.</span><span id="contadorFiltroAvarias" class="font-bold text-blue-700"></span></div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center"><div><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total no Filtro</span><h3 id="resumoTotalDebitos" class="text-lg font-black text-slate-800 mt-0.5">R$ 0,00</h3></div><div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i data-lucide="wallet" class="w-5 h-5"></i></div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center"><div><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pendentes de Desconto</span><h3 id="resumoPendenteDebitos" class="text-lg font-black text-amber-600 mt-0.5">R$ 0,00</h3></div><div class="p-3 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="clock" class="w-5 h-5"></i></div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center"><div><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Descontados / Liquidados</span><h3 id="resumoLiquidadoDebitos" class="text-lg font-black text-emerald-600 mt-0.5">R$ 0,00</h3></div><div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i data-lucide="check-circle" class="w-5 h-5"></i></div></div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200"><h3 class="text-xs font-bold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i> Ocorrências por Categoria</h3><div class="h-64 relative"><canvas id="graficoAvariaTipo"></canvas></div></div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200"><h3 class="text-xs font-bold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-600"></i> Valores por Status da Cobrança</h3><div class="h-64 relative"><canvas id="graficoAvariaStatus"></canvas></div></div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2"><h3 class="text-xs font-bold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-purple-600"></i> Evolução Mensal dos Débitos</h3><div class="h-64 relative"><canvas id="graficoAvariaMes"></canvas></div></div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 bg-slate-50"><h3 class="text-xs font-bold text-slate-800">Registro de Anomalias, Multas e Avarias</h3></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="bg-slate-900 text-white text-[10px] font-bold uppercase"><th class="p-3">Data</th><th class="p-3">Colaborador / Ref</th><th class="p-3">Categoria</th><th class="p-3">Descrição / Auto</th><th class="p-3">Valor (R$)</th><th class="p-3">Status</th><th id="thAcoesAvarias" class="p-3 text-right">Ações</th></tr></thead><tbody id="tabelaAvarias" class="divide-y divide-slate-100 text-xs"></tbody></table></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAIS DO SISTEMA -->
+    <div id="modalEditarAcessos" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="key-round" class="w-5 h-5 text-blue-600"></i> MENU EDITAR ACESSOS</h3>
+                <button onclick="fecharModalAcessos()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 class="text-xs font-bold text-blue-900">Administrador Master (admin / admin123)</h4>
+                    <p class="text-[11px] text-blue-700">Acesso total (leitura, escrita, edição e exclusão).</p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <h4 class="text-xs font-bold text-slate-800">Convidado (convidado / 123456)</h4>
+                    <p class="text-[11px] text-slate-600">Acesso restrito apenas a visualização de páginas e dados.</p>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="fecharModalAcessos()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold shadow">Concluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo / Editar Colaborador (Com upload de Foto, Ficha, ASO e CNH) -->
+    <div id="modalColaborador" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 99999; align-items: center; justify-content: center; padding: 1rem; overflow-y: auto;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 border border-slate-200 my-8">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 id="modalColabTitulo" class="text-base font-bold text-slate-800">Novo Colaborador</h3>
+                <button onclick="fecharModalColab()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="salvarColaborador(event)" class="space-y-4 text-xs">
+                <input type="hidden" id="editIndexColab" value="-1">
+                
+                <!-- Foto e Identificação Básica -->
+                <div>
+                    <h4 class="text-blue-700 font-bold mb-2 uppercase text-[11px]">1. Foto & Identificação</h4>
+                    <div class="flex flex-col sm:flex-row gap-4 items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="flex flex-col items-center">
+                            <div class="w-24 h-24 bg-white border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center overflow-hidden relative shadow-sm">
+                                <img id="previewFoto" src="" alt="Foto" class="w-full h-full object-cover hidden">
+                                <span id="placeholderFoto" class="text-[10px] text-slate-400 text-center p-1">Sem Foto</span>
+                            </div>
+                            <label class="mt-2 bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-[10px] font-semibold cursor-pointer">
+                                Carregar Foto
+                                <input type="file" id="inputFotoFile" accept="image/*" onchange="converterFoto(event)" class="hidden">
+                            </label>
+                            <input type="hidden" id="cFotoBase64">
+                        </div>
+                        <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+                            <div><label class="font-semibold text-slate-500">Matrícula *</label><input type="text" id="cMatricula" required class="w-full border rounded p-2 mt-1"></div>
+                            <div class="sm:col-span-2"><label class="font-semibold text-slate-500">Nome Completo *</label><input type="text" id="cNome" required class="w-full border rounded p-2 mt-1"></div>
+                            <div><label class="font-semibold text-slate-500">Empresa *</label><select id="cEmpresa" class="w-full border rounded p-2 mt-1"><option value="Puma">Puma</option><option value="Ômega">Ômega</option></select></div>
+                            <div><label class="font-semibold text-slate-500">Função / Cargo *</label><input type="text" id="cFuncao" required class="w-full border rounded p-2 mt-1"></div>
+                            <div><label class="font-semibold text-slate-500">Tomador / Obra</label><input type="text" id="cTomador" class="w-full border rounded p-2 mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dados Pessoais & Contato -->
+                <div class="pt-2 border-t">
+                    <h4 class="text-blue-700 font-bold mb-2 uppercase text-[11px]">2. Dados Pessoais & Contato</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div><label class="font-semibold text-slate-500">CPF *</label><input type="text" id="cCpf" required class="w-full border rounded p-2 mt-1" placeholder="000.000.000-00"></div>
+                        <div><label class="font-semibold text-slate-500">RG</label><input type="text" id="cRg" class="w-full border rounded p-2 mt-1"></div>
+                        <div><label class="font-semibold text-slate-500">Nascimento</label><input type="date" id="cNascimento" class="w-full border rounded p-2 mt-1"></div>
+                        <div><label class="font-semibold text-slate-500">Telefone</label><input type="text" id="cTelefone" class="w-full border rounded p-2 mt-1"></div>
+                    </div>
+                </div>
+
+                <!-- Admissão & Contrato de Experiência -->
+                <div class="pt-2 border-t">
+                    <h4 class="text-blue-700 font-bold mb-2 uppercase text-[11px]">3. Admissão & Contrato de Experiência</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                        <div>
+                            <label class="font-semibold text-blue-900 block mb-1">📅 Data de Admissão *</label>
+                            <input type="date" id="cAdmissao" required class="w-full border rounded p-2 bg-white" onchange="calcularVencimentoExperiencia()">
+                        </div>
+                        <div>
+                            <label class="font-semibold text-blue-900 block mb-1">⏱️ Início Experiência</label>
+                            <input type="date" id="cInicioExp" class="w-full border rounded p-2 bg-white">
+                        </div>
+                        <div>
+                            <label class="font-semibold text-blue-900 block mb-1">🔄 Prorrogação Experiência</label>
+                            <div class="flex gap-1">
+                                <select id="cProrrogacaoDias" class="w-1/2 border rounded p-2 bg-white text-[11px]" onchange="calcularVencimentoExperiencia()">
+                                    <option value="0">Sem Prorrogação</option>
+                                    <option value="30">30 Dias</option>
+                                    <option value="45">45 Dias</option>
+                                    <option value="60">60 Dias</option>
+                                    <option value="90">90 Dias</option>
+                                </select>
+                                <input type="date" id="cVencimentoExp" class="w-1/2 border rounded p-2 bg-white" placeholder="Vencimento">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Operacional -->
+                <div class="pt-2 border-t">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label class="font-semibold text-slate-500">Status Operacional *</label><select id="cStatus" class="w-full border rounded p-2 mt-1"><option value="Ativo">Ativo</option><option value="Férias">Férias</option><option value="Afastado">Afastado</option><option value="Aviso Prévio">Aviso Prévio</option><option value="Demitido">Demitido</option></select></div>
+                        <div><label class="font-semibold text-slate-500">Link Outros Documentos / Pasta ZIP</label><input type="text" id="cLinkOutros" class="w-full border rounded p-2 mt-1" placeholder="https://..."></div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4 border-t">
+                    <button type="button" onclick="fecharModalColab()" class="px-4 py-2 bg-gray-200 rounded font-bold text-slate-700">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Salvar Ficha Completa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Férias (Com Cálculo Automático) -->
+    <div id="modalFerias" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800">Programar Férias (Cálculo Automático)</h3>
+                <button onclick="fecharModalFerias()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="salvarFerias(event)" class="space-y-3 text-xs">
+                <div><label class="font-semibold text-slate-500">Colaborador *</label><select id="fColabSelect" required class="w-full border rounded p-2 mt-1"></select></div>
+                <div><label class="font-semibold text-slate-500">Data de Saída (Início) *</label><input type="date" id="fInicio" required onchange="calcularFimFerias()" class="w-full border rounded p-2 mt-1"></div>
+                <div><label class="font-semibold text-slate-500">Quantidade de Dias *</label><input type="number" id="fDias" required min="1" max="30" value="30" oninput="calcularFimFerias()" class="w-full border rounded p-2 mt-1"></div>
+                
+                <div class="p-3 bg-amber-50 rounded-lg border border-amber-200 space-y-1">
+                    <p class="font-bold text-amber-900">Previsão Calculada:</p>
+                    <p id="calcFimPrev" class="text-amber-800">Término (Fim): -</p>
+                    <p id="calcRetornoPrev" class="text-amber-800 font-bold">Retorno ao Trabalho: -</p>
+                </div>
+
+                <div><label class="font-semibold text-slate-500">Situação *</label><select id="fSituacao" class="w-full border rounded p-2 mt-1"><option value="Programado">Programado</option><option value="Em Gozo">Em Gozo</option><option value="Concluído">Concluído</option></select></div>
+                
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="fecharModalFerias()" class="px-3 py-1.5 bg-gray-200 rounded">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white rounded font-bold">Salvar Férias</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Avarias -->
+    <div id="modalAvaria" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 id="modalAvariaTitulo" class="text-base font-bold text-slate-800">Registrar Avaria, Multa ou Débito</h3>
+                <button onclick="fecharModalAvaria()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="salvarAvaria(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="editIndexAvaria" value="-1">
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="font-semibold text-slate-500">Data da Ocorrência *</label><input type="date" id="aData" required class="w-full border rounded p-2 mt-1"></div>
+                    <div>
+                        <label class="font-semibold text-slate-500">Categoria / Tipo *</label>
+                        <select id="aTipo" class="w-full border rounded p-2 mt-1">
+                            <option value="Multa de Trânsito">Multa de Trânsito</option>
+                            <option value="Avaria de Veículo">Avaria de Veículo</option>
+                            <option value="Anomalia Operacional">Anomalia Operacional</option>
+                            <option value="Outros Débitos">Outros Débitos</option>
+                        </select>
+                    </div>
+                </div>
+                <div><label class="font-semibold text-slate-500">Colaborador Envolvido *</label><input type="text" id="aColab" required class="w-full border rounded p-2 mt-1"></div>
+                <div><label class="font-semibold text-slate-500">Número da Multa / Auto / Ref (Opcional)</label><input type="text" id="aAuto" class="w-full border rounded p-2 mt-1"></div>
+                <div><label class="font-semibold text-slate-500">Descrição Detalhada *</label><textarea id="aDesc" required class="w-full border rounded p-2 mt-1" rows="2"></textarea></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="font-semibold text-slate-500">Valor do Débito (R$) *</label><input type="number" step="0.01" id="aCusto" required class="w-full border rounded p-2 mt-1" value="0.00"></div>
+                    <div>
+                        <label class="font-semibold text-slate-500">Status da Cobrança *</label>
+                        <select id="aStatus" class="w-full border rounded p-2 mt-1">
+                            <option value="Pendente Desconto">Pendente Desconto</option>
+                            <option value="Descontado em Folha">Descontado em Folha</option>
+                            <option value="Parcelado">Parcelado</option>
+                            <option value="Cancelado / Abonado">Cancelado / Abonado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="fecharModalAvaria()" class="px-3 py-1.5 bg-gray-200 rounded">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white rounded font-bold">Salvar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Importação de Planilha Fonte - Avarias -->
+    <div id="modalImportacaoAvarias" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,.75); z-index:100000; align-items:center; justify-content:center; padding:1rem;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <div><h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="file-up" class="w-5 h-5 text-emerald-600"></i> Importar Planilha Fonte</h3><p class="text-[11px] text-slate-500 mt-1">Importe Excel (.xlsx/.xls) ou CSV diretamente para Anomalias/Avarias.</p></div>
+                <button onclick="fecharImportacaoAvarias()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-3">
+                <input type="file" id="arquivoFonteAvarias" accept=".xlsx,.xls,.csv" onchange="lerPlanilhaFonteAvarias(event)" class="w-full border rounded-lg p-2 text-xs bg-white">
+                <div id="resultadoImportacaoAvarias" class="hidden"></div>
+                <div class="text-[10px] text-slate-500 leading-relaxed">
+                    <b>Colunas reconhecidas:</b> Data, Colaborador/Nome/Motorista, Categoria/Tipo, Auto/Referência, Descrição, Valor/Custo e Status.
+                    O sistema tenta identificar automaticamente nomes equivalentes e evita duplicar registros já existentes.
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button type="button" onclick="fecharImportacaoAvarias()" class="px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700">Cancelar</button>
+                <button type="button" id="btnConfirmarImportacaoAvarias" onclick="confirmarImportacaoAvarias()" disabled class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"><i data-lucide="database-import" class="w-3.5 h-3.5 inline mr-1"></i> Importar registros</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Perfil Detalhado -->
+    <div id="modalPerfilDetalhes" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="user" class="w-5 h-5 text-blue-600"></i> Ficha Completa do Colaborador</h3>
+                <button onclick="fecharModalPerfil()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
+                <div class="flex flex-col items-center justify-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <img id="detalheFoto" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400" alt="Foto" class="w-32 h-32 rounded-xl object-cover shadow-md border-2 border-white">
+                    <span id="detalheStatus" class="mt-3 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Ativo</span>
+                </div>
+                <div class="sm:col-span-2 space-y-2 text-xs">
+                    <div><span class="font-bold text-slate-400 uppercase text-[10px]">Nome Completo:</span><p id="detalheNome" class="text-sm font-black text-slate-800">-</p></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><span class="font-bold text-slate-400 uppercase text-[10px]">Matrícula:</span><p id="detalheMatricula" class="font-semibold text-slate-700">-</p></div>
+                        <div><span class="font-bold text-slate-400 uppercase text-[10px]">CPF:</span><p id="detalheCpf" class="font-semibold text-slate-700">-</p></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><span class="font-bold text-slate-400 uppercase text-[10px]">Empresa:</span><p id="detalheEmpresa" class="font-semibold text-slate-700">-</p></div>
+                        <div><span class="font-bold text-slate-400 uppercase text-[10px]">Função:</span><p id="detalheFuncao" class="font-semibold text-slate-700">-</p></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><span class="font-bold text-slate-400 uppercase text-[10px]">Tomador / Obra:</span><p id="detalheTomador" class="font-semibold text-slate-700">-</p></div>
+                        <div><span class="font-bold text-slate-400 uppercase text-[10px]">Telefone:</span><p id="detalheTelefone" class="font-semibold text-slate-700">-</p></div>
+                    </div>
+                    <div class="pt-3 border-t flex flex-wrap gap-2" id="detalheLinksContainer"></div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="fecharModalPerfil()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-semibold">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Saúde -->
+    <div id="modalSaude" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 id="modalSaudeTitulo" class="text-base font-bold text-slate-800">Cadastrar Plano de Saúde</h3>
+                <button onclick="fecharModalSaude()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="salvarSaude(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="editIndexSaude" value="-1">
+                <div><label class="font-semibold text-slate-500">Colaborador *</label><input type="text" id="sColab" required class="w-full border rounded p-2 mt-1"></div>
+                <div><label class="font-semibold text-slate-500">Operadora *</label><input type="text" id="sOperadora" required class="w-full border rounded p-2 mt-1"></div>
+                <div><label class="font-semibold text-slate-500">Nº da Carteirinha *</label><input type="text" id="sCarteirinha" required class="w-full border rounded p-2 mt-1"></div>
+                <div><label class="font-semibold text-slate-500">Tipo de Plano *</label><select id="sTipo" class="w-full border rounded p-2 mt-1"><option value="Enfermaria">Enfermaria</option><option value="Apartamento">Apartamento</option><option value="Ambulatorial">Ambulatorial</option></select></div>
+                <div><label class="font-semibold text-slate-500">Qtd. Dependentes</label><input type="number" id="sDependentes" class="w-full border rounded p-2 mt-1" value="0"></div>
+                <div><label class="font-semibold text-slate-500">Valor Mensal (R$)</label><input type="number" step="0.01" id="sValor" class="w-full border rounded p-2 mt-1" value="0.00"></div>
+                <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="fecharModalSaude()" class="px-3 py-1.5 bg-gray-200 rounded">Cancelar</button><button type="submit" class="px-4 py-1.5 bg-blue-600 text-white rounded font-bold">Salvar Plano</button></div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Modal Registrar Novo Treino (Selecionando Colaboradores) -->
+    <div id="modalRegistrarTreinoLote" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-slate-200 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="award" class="w-5 h-5 text-blue-600"></i> Registar Novo Treinamento</h3>
+                <button onclick="fecharModalRegistrarTreinoLote()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="salvarTreinamentoLote(event)" class="space-y-4 text-xs flex-1 overflow-y-auto pr-1">
+                <div>
+                    <label class="font-semibold text-slate-500">Selecionar Treinamento / NR *</label>
+                    <select id="treinoModalSelect" required class="w-full border rounded p-2 mt-1 bg-white text-xs"></select>
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-500">Data de Validade *</label>
+                    <input type="date" id="treinoModalValidade" required class="w-full border rounded p-2 mt-1 bg-white text-xs">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="font-semibold text-slate-500">Selecionar Colaboradores *</label>
+                        <div class="space-x-2">
+                            <button type="button" onclick="selecionarTodosColabTreino(true)" class="text-blue-600 font-bold hover:underline">Marcar Todos</button>
+                            <span class="text-slate-300">|</span>
+                            <button type="button" onclick="selecionarTodosColabTreino(false)" class="text-slate-600 font-bold hover:underline">Desmarcar Todos</button>
+                        </div>
+                    </div>
+                    <div id="listaColabCheckboxes" class="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2 bg-slate-50"></div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t">
+                    <button type="button" onclick="fecharModalRegistrarTreinoLote()" class="px-3 py-1.5 bg-gray-200 rounded font-bold">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Registar Treinamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+        <!-- Modal Gerenciar Títulos de Treinamentos -->
+    <div id="modalGerenciarTitulos" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5 text-blue-600"></i> Titular / Configurar Treinamentos</h3>
+                <button onclick="fecharModalGerenciarTitulos()"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Adicione ou renomeie os treinamentos de área que deseja controlar nas colunas.</p>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="novoTituloTreinamento" placeholder="Nome do novo treinamento ou NR..." class="flex-1 border rounded p-2 text-xs">
+                <button onclick="adicionarNovoTituloTreinamento()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-bold">Adicionar</button>
+            </div>
+            <div id="listaTitulosConfig" class="max-h-60 overflow-y-auto space-y-2 mb-4 pr-1"></div>
+            <div class="flex justify-end gap-2 pt-2 border-t">
+                <button onclick="fecharModalGerenciarTitulos()" class="px-4 py-2 bg-blue-600 text-white rounded font-bold text-xs">Concluir & Salvar</button>
+            </div>
+        </div>
+    </div>
+    <!-- SCRIPTS -->
+    <script>
+        let usuarioLogado = null;
+        let graficoEmpresaInstance = null;
+        let graficoStatusInstance = null;
+        let graficoAvariaTipoInstance = null;
+        let graficoAvariaStatusInstance = null;
+        let graficoAvariaMesInstance = null;
+
+        // Lista de 10+ treinamentos padrão para cada colaborador
+        let listaTreinamentosPadrao = JSON.parse(localStorage.getItem('op_titulos_treinamentos')) || [
+            { id: 'nr6', nome: 'NR-06 (EPI)' },
+            { id: 'nr10', nome: 'NR-10 (Elétrica)' },
+            { id: 'nr11', nome: 'NR-11 (Transp.)' },
+            { id: 'nr12', nome: 'NR-12 (Máquinas)' },
+            { id: 'nr18', nome: 'NR-18 (Construção)' },
+            { id: 'nr20', nome: 'NR-20 (Inflamáveis)' },
+            { id: 'nr33', nome: 'NR-33 (Espaço Conf.)' },
+            { id: 'nr35', nome: 'NR-35 (Altura)' },
+            { id: 'cipa', nome: 'CIPA' },
+            { id: 'socorros', nome: 'Primeiros Socorros' }
+        ];
+
+        let colaboradores = JSON.parse(localStorage.getItem('op_efetivo')) || [
+            { 
+                matricula: "1001", nome: "Adilson Buliano", empresa: "Puma", funcao: "Motorista", tomador: "ADM Garagem", cpf: "097.618.247-56", status: "Ativo", 
+                docFicha: "ficha_1001.pdf", tipoAso: "Admissional", validadeAso: "2026-12-10", docAso: "aso_1001.pdf", cnhCat: "D", cnhValidade: "2028-05-15", docCnh: "cnh_1001.pdf",
+                foto: "", linkOutros: "", treinamentos: { nr6: "2027-01-10", nr10: "2026-11-10", nr11: "2027-02-15", nr12: "2028-01-01", nr18: "2027-05-20", nr20: "2027-06-10", nr33: "2026-12-01", nr35: "2027-01-10", cipa: "2026-10-15", socorros: "2027-03-30" }
+            },
+            { 
+                matricula: "1002", nome: "Adriana de Souza Ribeiro", empresa: "Ômega", funcao: "Analista de RH", tomador: "Escritório", cpf: "099.371.677-60", status: "Férias", 
+                docFicha: "ficha_1002.pdf", tipoAso: "Periódico", validadeAso: "2026-08-20", docAso: "aso_1002.pdf", cnhCat: "B", cnhValidade: "2030-01-01", docCnh: "cnh_1002.pdf",
+                foto: "", linkOutros: "", treinamentos: { nr6: "2026-11-30", nr10: "", nr11: "", nr12: "", nr18: "", nr20: "", nr33: "", nr35: "", cipa: "2027-04-10", socorros: "2027-05-10" }
+            }
+        ];
+
+        let feriasPlan = JSON.parse(localStorage.getItem('op_ferias')) || [
+            { colab: "Adriana de Souza Ribeiro", inicio: "2026-10-01", dias: 20, fim: "2026-10-20", retorno: "2026-10-21", situacao: "Em Gozo" }
+        ];
+
+        let avariasPlan = JSON.parse(localStorage.getItem('op_avarias')) || [
+            { data: "2026-09-10", colab: "Adilson Buliano", tipo: "Avaria de Veículo", desc: "Arranhão lateral", custo: 850.00, status: "Pendente Desconto", auto: "REF-01" }
+        ];
+
+        let saudePlan = JSON.parse(localStorage.getItem('op_saude')) || [
+            { colab: "Adilson Buliano", operadora: "Unimed", carteirinha: "123456", tipo: "Enfermaria", dependentes: 1, valor: 450.00 }
+        ];
+
+        function salvarTudo() {
+            localStorage.setItem('op_efetivo', JSON.stringify(colaboradores));
+            localStorage.setItem('op_ferias', JSON.stringify(feriasPlan));
+            localStorage.setItem('op_avarias', JSON.stringify(avariasPlan));
+            localStorage.setItem('op_saude', JSON.stringify(saudePlan));
+        }
+
+        function realizarLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsuario').value.trim();
+            const s = document.getElementById('loginSenha').value.trim();
+
+            if(u === 'admin' && s === 'admin123') {
+                usuarioLogado = 'admin';
+            } else if(u === 'convidado' && s === '123456') {
+                usuarioLogado = 'convidado';
+            } else {
+                alert('Credenciais inválidas! Use admin / admin123 ou convidado / 123456');
+                return;
+            }
+
+            document.getElementById('screenLogin').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            aplicarPermissoes();
+            renderizarTudo();
+        }
+
+        function fazerLogout() {
+            usuarioLogado = null;
+            document.getElementById('screenLogin').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+        }
+
+        function aplicarPermissoes() {
+            const eBtn = document.getElementById('btnNovoColab');
+            const fBtn = document.getElementById('btnNovaFerias');
+            const aBtn = document.getElementById('btnNovaAvaria');
+            const sBtn = document.getElementById('btnNovoSaude');
+
+            if(usuarioLogado === 'convidado') {
+                if(eBtn) eBtn.style.display = 'none';
+                if(fBtn) fBtn.style.display = 'none';
+                if(aBtn) aBtn.style.display = 'none';
+                if(sBtn) sBtn.style.display = 'none';
+                document.getElementById('badgePerfil').innerText = 'Convidado';
+            } else {
+                if(eBtn) eBtn.style.display = 'flex';
+                if(fBtn) fBtn.style.display = 'flex';
+                if(aBtn) aBtn.style.display = 'flex';
+                if(sBtn) sBtn.style.display = 'flex';
+                document.getElementById('badgePerfil').innerText = 'Admin Master';
+            }
+        }
+
+        function mudarAba(aba) {
+            document.getElementById('tabEfetivo').classList.add('hidden');
+            document.getElementById('tabTreinamentos').classList.add('hidden');
+            document.getElementById('tabSaude').classList.add('hidden');
+            document.getElementById('tabFerias').classList.add('hidden');
+            document.getElementById('tabAvarias').classList.add('hidden');
+
+            document.getElementById('btnTabEfetivo').className = "py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 whitespace-nowrap";
+            document.getElementById('btnTabTreinamentos').className = "py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 whitespace-nowrap";
+            document.getElementById('btnTabSaude').className = "py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 whitespace-nowrap";
+            document.getElementById('btnTabFerias').className = "py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 whitespace-nowrap";
+            document.getElementById('btnTabAvarias').className = "py-3 px-1 border-b-2 flex items-center gap-2 border-transparent text-slate-500 whitespace-nowrap";
+
+            if(aba === 'efetivo') {
+                document.getElementById('tabEfetivo').classList.remove('hidden');
+                document.getElementById('btnTabEfetivo').className = "py-3 px-1 border-b-2 font-bold flex items-center gap-2 border-blue-600 text-blue-600 whitespace-nowrap";
+                renderizarEfetivo();
+            } else if(aba === 'treinamentos') {
+                document.getElementById('tabTreinamentos').classList.remove('hidden');
+                document.getElementById('btnTabTreinamentos').className = "py-3 px-1 border-b-2 font-bold flex items-center gap-2 border-blue-600 text-blue-600 whitespace-nowrap";
+                renderizarTreinamentos();
+            } else if(aba === 'saude') {
+                document.getElementById('tabSaude').classList.remove('hidden');
+                document.getElementById('btnTabSaude').className = "py-3 px-1 border-b-2 font-bold flex items-center gap-2 border-blue-600 text-blue-600 whitespace-nowrap";
+                renderizarSaude();
+            } else if(aba === 'ferias') {
+                document.getElementById('tabFerias').classList.remove('hidden');
+                document.getElementById('btnTabFerias').className = "py-3 px-1 border-b-2 font-bold flex items-center gap-2 border-blue-600 text-blue-600 whitespace-nowrap";
+                renderizarFerias();
+            } else if(aba === 'avarias') {
+                document.getElementById('tabAvarias').classList.remove('hidden');
+                document.getElementById('btnTabAvarias').className = "py-3 px-1 border-b-2 font-bold flex items-center gap-2 border-blue-600 text-blue-600 whitespace-nowrap";
+                renderizarAvarias();
+            }
+        }
+
+        function formatarData(d) {
+            if(!d) return '-';
+            const p = d.split('-');
+            if(p.length !== 3) return d;
+            return `${p[2]}/${p[1]}/${p[0]}`;
+        }
+
+        function formatarMoeda(v) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+        }
+
+        function renderizarTudo() {
+            renderizarEfetivo();
+            renderizarTreinamentos();
+            renderizarSaude();
+            renderizarFerias();
+            renderizarAvarias();
+            atualizarCardsEstatisticas();
+            atualizarAlertaFerias();
+            atualizarGraficos();
+        }
+
+        function atualizarCardsEstatisticas() {
+            let total = colaboradores.length;
+            let ativos = colaboradores.filter(c => c.status === 'Ativo').length;
+            let ferias = colaboradores.filter(c => c.status === 'Férias').length;
+            let afastado = colaboradores.filter(c => c.status === 'Afastado').length;
+            let aviso = colaboradores.filter(c => c.status === 'Aviso Prévio').length;
+            let demitido = colaboradores.filter(c => c.status === 'Demitido').length;
+
+            document.getElementById('statTotal').innerText = total;
+            document.getElementById('statAtivos').innerText = ativos;
+            document.getElementById('statFerias').innerText = ferias;
+            document.getElementById('statAfastado').innerText = afastado;
+            document.getElementById('statAviso').innerText = aviso;
+            document.getElementById('statDemitido').innerText = demitido;
+            document.getElementById('statExperiencia').innerText = 0;
+            document.getElementById('statPendencias').innerText = colaboradores.filter(c => !c.docFicha || !c.docAso || (c.validadeAso && c.validadeAso < '2026-10-01')).length;
+        }
+
+        // Alerta de férias ajustado: Apenas quem está de férias no momento, dias, data saída e retorno
+        function atualizarAlertaFerias() {
+            const container = document.getElementById('containerAlertaFerias');
+            container.innerHTML = '';
+            
+            // Considerar quem está com status 'Férias' ou cuja data atual está entre início e fim
+            const hoje = '2026-10-02'; // data atual simulada
+            const feriasAtuais = feriasPlan.filter(f => f.situacao === 'Em Gozo' || (f.inicio <= hoje && f.fim >= hoje));
+
+            if(feriasAtuais.length === 0) {
+                container.innerHTML = '<span class="text-slate-600">Nenhum colaborador em férias no momento.</span>';
+                return;
+            }
+
+            feriasAtuais.forEach(f => {
+                container.innerHTML += `
+                    <div class="bg-amber-100/70 p-1.5 rounded border border-amber-300 mb-1">
+                        <b>${f.colab}</b><br>
+                        <span>Saída: ${formatarData(f.inicio)} | Duração: <b>${f.dias} dias</b> | Retorno: <b>${formatarData(f.retorno || f.fim)}</b></span>
+                    </div>
+                `;
+            });
+        }
+
+        function converterFoto(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                document.getElementById('cFotoBase64').value = base64;
+                const prev = document.getElementById('previewFoto');
+                prev.src = base64;
+                prev.classList.remove('hidden');
+                document.getElementById('placeholderFoto').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderizarEfetivo() {
+            const tbody = document.getElementById('tabelaEfetivo');
+            const thAcoes = document.getElementById('thAcoesEfetivo');
+            tbody.innerHTML = '';
+            if(usuarioLogado === 'convidado') { thAcoes.style.display = 'none'; } else { thAcoes.style.display = 'table-cell'; }
+
+            const filtro = document.getElementById('inputBusca') ? document.getElementById('inputBusca').value.toLowerCase() : '';
+            const listaFiltrada = colaboradores.filter(c => c.nome.toLowerCase().includes(filtro));
+
+            listaFiltrada.forEach((c, idx) => {
+                let acoesHtml = '';
+                if(usuarioLogado !== 'convidado') {
+                    acoesHtml = `
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="abrirPerfilDetalhes(${idx})" class="text-emerald-600 p-1 hover:bg-emerald-50 rounded" title="Ver Ficha e Docs"><i data-lucide="user-check" class="w-3.5 h-3.5 inline"></i></button>
+                            <button onclick="editarColab(${idx})" class="text-blue-600 p-1 hover:bg-blue-50 rounded" title="Editar"><i data-lucide="edit" class="w-3.5 h-3.5 inline"></i></button>
+                            <button onclick="excluirColab(${idx})" class="text-rose-600 p-1 hover:bg-rose-50 rounded" title="Excluir"><i data-lucide="trash-2" class="w-3.5 h-3.5 inline"></i></button>
+                        </td>
+                    `;
+                }
+
+                let fotoSrc = c.foto ? c.foto : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400';
+                
+                // Links de documentos
+                let docsHtml = '<div class="flex flex-wrap gap-1 mt-1">';
+                if(c.docFicha) docsHtml += `<span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-bold border border-emerald-200">Ficha OK</span>`;
+                else docsHtml += `<span class="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[10px]">Sem Ficha</span>`;
+
+                if(c.docAso || c.validadeAso) docsHtml += `<span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold border border-blue-200">ASO (${formatarData(c.validValidadeAso || c.validadeAso)})</span>`;
+                else docsHtml += `<span class="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[10px]">Sem ASO</span>`;
+
+                if(c.cnhCat) docsHtml += `<span class="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-bold border border-purple-200">CNH ${c.cnhCat}</span>`;
+                docsHtml += '</div>';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b">
+                        <td class="p-3"><img src="${fotoSrc}" class="w-10 h-10 rounded-lg object-cover shadow-sm border"></td>
+                        <td class="p-3"><b>${c.nome}</b><br><span class="text-[10px] text-slate-400">Mat: ${c.matricula} | CPF: ${c.cpf}</span></td>
+                        <td class="p-3 font-semibold text-slate-700">${c.empresa} - ${c.funcao}<br><span class="text-[10px] text-slate-400">${c.tomador || ''}</span></td>
+                        <td class="p-3">${docsHtml}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700 font-bold">${c.status}</span></td>
+                        ${acoesHtml}
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function filtrarTabela() { renderizarEfetivo(); }
+
+        // --- ABA DE TREINAMENTOS PERSONALIZÁVEIS ---
+        function renderizarTreinamentos() {
+            const thead = document.getElementById('theadTreinamentos');
+            const tbody = document.getElementById('tabelaTreinamentos');
+            if(!tbody || !thead) return;
+
+            let headerHtml = '<th class="p-3">Colaborador</th>';
+            listaTreinamentosPadrao.forEach(t => {
+                headerHtml += `<th class="p-3 text-center">${t.nome}</th>`;
+            });
+            headerHtml += '<th class="p-3 text-right">Ações (Salvar / Excluir)</th>';
+            thead.innerHTML = headerHtml;
+
+            tbody.innerHTML = '';
+            const busca = document.getElementById('buscaTreinamento') ? document.getElementById('buscaTreinamento').value.toLowerCase() : '';
+            const lista = colaboradores.filter(c => c.nome.toLowerCase().includes(busca));
+
+            lista.forEach((c) => {
+                let colabIndex = colaboradores.findIndex(item => item.matricula === c.matricula);
+                if(!c.treinamentos) c.treinamentos = {};
+
+                let tds = '';
+                listaTreinamentosPadrao.forEach(t => {
+                    let val = c.treinamentos[t.id] || '';
+                    let statusClass = val ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-400 border-slate-200';
+                    tds += `
+                        <td class="p-2 text-center">
+                            <input type="date" value="${val}" onchange="atualizarTreinamentoColab(${colabIndex}, '${t.id}', this.value)" class="w-32 border rounded p-1 text-[11px] ${statusClass}" title="Data de validade">
+                        </td>
+                    `;
+                });
+
+                let acoes = '';
+                if(usuarioLogado !== 'convidado') {
+                    acoes = `
+                        <td class="p-3 text-right space-x-1 whitespace-nowrap">
+                            <button onclick="salvarTudo(); alert('Treinamentos de ${c.nome} salvos!');" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-[10px] font-bold shadow" title="Salvar Treinamentos">Salvar</button>
+                            <button onclick="excluirColab(${colabIndex}); renderizarTreinamentos();" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-[10px] font-bold shadow inline-flex items-center gap-1" title="Excluir Colaborador"><i data-lucide="trash-2" class="w-3 h-3 inline"></i> Excluir</button>
+                        </td>
+                    `;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b">
+                        <td class="p-3 font-bold">${c.nome}<br><span class="text-[10px] text-slate-400">Mat: ${c.matricula}</span></td>
+                        ${tds}
+                        ${acoes}
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+
+        function abrirModalRegistrarTreinoLote() {
+            if(usuarioLogado === 'convidado') { alert('Acesso restrito.'); return; }
+            const selectTreino = document.getElementById('treinoModalSelect');
+            selectTreino.innerHTML = '';
+            listaTreinamentosPadrao.forEach(t => {
+                selectTreino.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
+            });
+            document.getElementById('treinoModalValidade').value = '';
+
+            const containerColab = document.getElementById('listaColabCheckboxes');
+            containerColab.innerHTML = '';
+            colaboradores.forEach((c) => {
+                containerColab.innerHTML += `
+                    <label class="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded">
+                        <input type="checkbox" name="colabCheckTreino" value="${c.matricula}" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4">
+                        <span class="font-semibold text-slate-700">${c.nome}</span>
+                        <span class="text-[10px] text-slate-400">(${c.empresa} - ${c.funcao})</span>
+                    </label>
+                `;
+            });
+            document.getElementById('modalRegistrarTreinoLote').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function fecharModalRegistrarTreinoLote() {
+            document.getElementById('modalRegistrarTreinoLote').style.display = 'none';
+        }
+
+        function selecionarTodosColabTreino(marcar) {
+            const checks = document.querySelectorAll('input[name="colabCheckTreino"]');
+            checks.forEach(chk => chk.checked = marcar);
+        }
+
+        function salvarTreinamentoLote(e) {
+            e.preventDefault();
+            if(usuarioLogado === 'convidado') return;
+            const treinoId = document.getElementById('treinoModalSelect').value;
+            const validade = document.getElementById('treinoModalValidade').value;
+            const checks = document.querySelectorAll('input[name="colabCheckTreino"]:checked');
+
+            if(checks.length === 0) {
+                alert('Selecione pelo menos um colaborador.');
+                return;
+            }
+
+            checks.forEach(chk => {
+                const matricula = chk.value;
+                const colab = colaboradores.find(c => c.matricula === matricula);
+                if(colab) {
+                    if(!colab.treinamentos) colab.treinamentos = {};
+                    colab.treinamentos[treinoId] = validade;
+                }
+            });
+
+            salvarTudo();
+            fecharModalRegistrarTreinoLote();
+            renderizarTreinamentos();
+            alert(`Treinamento registado com sucesso para ${checks.length} colaborador(es)!`);
+        }
+
+                function abrirModalGerenciarTitulos() {
+            if(usuarioLogado === 'convidado') { alert('Acesso restrito.'); return; }
+            renderizarListaTitulosConfig();
+            document.getElementById('modalGerenciarTitulos').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function fecharModalGerenciarTitulos() {
+            document.getElementById('modalGerenciarTitulos').style.display = 'none';
+            localStorage.setItem('op_titulos_treinamentos', JSON.stringify(listaTreinamentosPadrao));
+            renderizarTreinamentos();
+        }
+
+        function renderizarListaTitulosConfig() {
+            const container = document.getElementById('listaTitulosConfig');
+            container.innerHTML = '';
+            listaTreinamentosPadrao.forEach((t, i) => {
+                container.innerHTML += `
+                    <div class="flex items-center gap-2 bg-slate-50 p-2 rounded border border-slate-200">
+                        <input type="text" value="${t.nome}" onchange="atualizarNomeTitulo(${i}, this.value)" class="flex-1 border rounded p-1 text-xs bg-white">
+                        <button onclick="removerTituloTreinamento(${i})" class="text-rose-600 hover:text-rose-800 p-1" title="Remover"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function atualizarNomeTitulo(index, novoNome) {
+            if(!novoNome.trim()) return;
+            listaTreinamentosPadrao[index].nome = novoNome.trim();
+        }
+
+        function adicionarNovoTituloTreinamento() {
+            const input = document.getElementById('novoTituloTreinamento');
+            const nome = input.value.trim();
+            if(!nome) { alert('Digite o nome do treinamento.'); return; }
+            const id = 'trein_' + Date.now();
+            listaTreinamentosPadrao.push({ id, nome });
+            input.value = '';
+            renderizarListaTitulosConfig();
+        }
+
+        function removerTituloTreinamento(index) {
+            if(listaTreinamentosPadrao.length <= 1) { alert('Mantenha pelo menos um treinamento.'); return; }
+            if(confirm('Tem certeza que deseja remover este treinamento?')) {
+                listaTreinamentosPadrao.splice(index, 1);
+                renderizarListaTitulosConfig();
+            }
+        }
+
+        function atualizarTreinamentoColab(colabIdx, treinarId, dataVal) {
+            if(!colaboradores[colabIdx].treinamentos) colaboradores[colabIdx].treinamentos = {};
+            colaboradores[colabIdx].treinamentos[treinarId] = dataVal;
+            salvarTudo();
+        }
+
+        // --- MODAL COLABORADOR ---
+        function abrirModalColab() {
+            if(usuarioLogado === 'convidado') { alert('Acesso restrito.'); return; }
+            document.getElementById('modalColabTitulo').innerText = 'Novo Colaborador';
+            document.getElementById('editIndexColab').value = '-1';
+            document.getElementById('cMatricula').value = '';
+            document.getElementById('cNome').value = '';
+            document.getElementById('cEmpresa').value = 'Puma';
+            document.getElementById('cFuncao').value = '';
+            document.getElementById('cTomador').value = '';
+            document.getElementById('cCpf').value = '';
+            document.getElementById('cRg').value = '';
+            document.getElementById('cNascimento').value = '';
+            document.getElementById('cTelefone').value = '';
+            document.getElementById('cAdmissao').value = '';
+            document.getElementById('cInicioExp').value = '';
+            document.getElementById('cProrrogacaoDias').value = '0';
+            document.getElementById('cVencimentoExp').value = '';
+            document.getElementById('cFotoBase64').value = '';
+            document.getElementById('previewFoto').classList.add('hidden');
+            document.getElementById('placeholderFoto').classList.remove('hidden');
+            document.getElementById('cLinkOutros').value = '';
+            document.getElementById('cStatus').value = 'Ativo';
+            document.getElementById('modalColaborador').style.display = 'flex';
+        }
+
+        function editarColab(idx) {
+            if(usuarioLogado === 'convidado') return;
+            const c = colaboradores[idx];
+            document.getElementById('modalColabTitulo').innerText = 'Editar Colaborador';
+            document.getElementById('editIndexColab').value = idx;
+            document.getElementById('cMatricula').value = c.matricula || '';
+            document.getElementById('cNome').value = c.nome || '';
+            document.getElementById('cEmpresa').value = c.empresa || 'Puma';
+            document.getElementById('cFuncao').value = c.funcao || '';
+            document.getElementById('cTomador').value = c.tomador || '';
+            document.getElementById('cCpf').value = c.cpf || '';
+            document.getElementById('cRg').value = c.rg || '';
+            document.getElementById('cNascimento').value = c.nascimento || '';
+            document.getElementById('cTelefone').value = c.telefone || '';
+            document.getElementById('cAdmissao').value = c.admissao || '';
+            document.getElementById('cInicioExp').value = c.inicioExp || '';
+            document.getElementById('cProrrogacaoDias').value = c.prorrogacaoDias || '0';
+            document.getElementById('cVencimentoExp').value = c.vencimentoExp || '';
+            document.getElementById('cFotoBase64').value = c.foto || '';
+            document.getElementById('cLinkOutros').value = c.linkOutros || '';
+            document.getElementById('cStatus').value = c.status || 'Ativo';
+
+            const prev = document.getElementById('previewFoto');
+            if(c.foto) {
+                prev.src = c.foto;
+                prev.classList.remove('hidden');
+                document.getElementById('placeholderFoto').classList.add('hidden');
+            } else {
+                prev.classList.add('hidden');
+                document.getElementById('placeholderFoto').classList.remove('hidden');
+            }
+
+            document.getElementById('modalColaborador').style.display = 'flex';
+        }
+
+        function fecharModalColab() { document.getElementById('modalColaborador').style.display = 'none'; }
+
+        
+    function calcularVencimentoExperiencia() {
+        const admStr = document.getElementById('cAdmissao').value;
+        if(!admStr) return;
+        
+        // Início da experiência por padrão é a data de admissão
+        const inicioExpEl = document.getElementById('cInicioExp');
+        if(!inicioExpEl.value) {
+            inicioExpEl.value = admStr;
+        }
+        
+        const prorrogDias = parseInt(document.getElementById('cProrrogacaoDias').value) || 0;
+        
+        // Contrato padrão de experiência: 30 dias + prorrogação (ou 45 + prorrogação). Vamos usar 30 dias iniciais + prorrogação (ex: 30 + 30 = 60 dias, ou 30 + 60 = 90 dias).
+        // Ou se o usuário preferir 30 dias para a 1ª etapa e mais X dias na prorrogação (total 30 + X, ou 45 + X). Vamos calcular: 30 dias base + prorrogação escolhida (ex: 30, 45, 60, 90).
+        let diasTotal = 30; // base 30 dias
+        if(prorrogDias > 0) {
+            diasTotal = 30 + prorrogDias; // ex: 30 + 30 = 60, 30 + 60 = 90
+        }
+        
+        const dataAdm = new Date(admStr + 'T00:00:00');
+        let dataVenc = new Date(dataAdm);
+        dataVenc.setDate(dataAdm.getDate() + diasTotal - 1); // -1 para fechar o período exato
+        
+        const fmtVenc = dataVenc.toISOString().split('T')[0];
+        document.getElementById('cVencimentoExp').value = fmtVenc;
+    }
+
+    function salvarColaborador(e) {
+            e.preventDefault();
+            if(usuarioLogado === 'convidado') return;
+            const idx = parseInt(document.getElementById('editIndexColab').value);
+            const obj = {
+                matricula: document.getElementById('cMatricula').value,
+                nome: document.getElementById('cNome').value,
+                empresa: document.getElementById('cEmpresa').value,
+                funcao: document.getElementById('cFuncao').value,
+                tomador: document.getElementById('cTomador').value,
+                cpf: document.getElementById('cCpf').value,
+                rg: document.getElementById('cRg').value,
+                nascimento: document.getElementById('cNascimento').value,
+                telefone: document.getElementById('cTelefone').value,
+                admissao: document.getElementById('cAdmissao').value,
+                inicioExp: document.getElementById('cInicioExp').value,
+                prorrogacaoDias: document.getElementById('cProrrogacaoDias').value,
+                vencimentoExp: document.getElementById('cVencimentoExp').value,
+                foto: document.getElementById('cFotoBase64').value || (idx !== -1 ? colaboradores[idx].foto : ''),
+                linkOutros: document.getElementById('cLinkOutros').value,
+                status: document.getElementById('cStatus').value,
+                treinamentos: idx !== -1 && colaboradores[idx].treinamentos ? colaboradores[idx].treinamentos : {}
+            };
+            if(idx === -1) colaboradores.push(obj); else colaboradores[idx] = obj;
+            salvarTudo(); fecharModalColab(); renderizarTudo();
+        }
+
+        function excluirColab(i) {
+            if(usuarioLogado === 'convidado') return;
+            if(confirm('Excluir colaborador?')) { colaboradores.splice(i, 1); salvarTudo(); renderizarTudo(); }
+        }
+
+        // --- ABA FÉRIAS COM CÁLCULO AUTOMÁTICO ---
+        function renderizarFerias() {
+            const tbody = document.getElementById('tabelaFerias');
+            const thAcoes = document.getElementById('thAcoesFerias');
+            tbody.innerHTML = '';
+            if(usuarioLogado === 'convidado') { thAcoes.style.display = 'none'; } else { thAcoes.style.display = 'table-cell'; }
+
+            feriasPlan.forEach((f, idx) => {
+                let acoesHtml = '';
+                if(usuarioLogado !== 'convidado') {
+                    acoesHtml = `<td class="p-3 text-right"><button onclick="excluirFerias(${idx})" class="text-rose-600 p-1 hover:bg-rose-50 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5 inline"></i></button></td>`;
+                }
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b">
+                        <td class="p-3 font-bold">${f.colab}</td>
+                        <td class="p-3">${formatarData(f.inicio)}</td>
+                        <td class="p-3 font-semibold text-blue-700">${f.dias} dias</td>
+                        <td class="p-3">${formatarData(f.fim)}</td>
+                        <td class="p-3 font-bold text-emerald-700">${formatarData(f.retorno)}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-700 font-bold">${f.situacao}</span></td>
+                        ${acoesHtml}
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function abrirModalFerias() {
+            if(usuarioLogado === 'convidado') return;
+            const select = document.getElementById('fColabSelect');
+            select.innerHTML = '';
+            colaboradores.forEach(c => {
+                select.innerHTML += `<option value="${c.nome}">${c.nome} (${c.empresa})</option>`;
+            });
+            document.getElementById('fInicio').value = '';
+            document.getElementById('fDias').value = '30';
+            document.getElementById('calcFimPrev').innerText = 'Término (Fim): -';
+            document.getElementById('calcRetornoPrev').innerText = 'Retorno ao Trabalho: -';
+            document.getElementById('modalFerias').style.display = 'flex';
+        }
+
+        function calcularFimFerias() {
+            const inicioStr = document.getElementById('fInicio').value;
+            const diasVal = parseInt(document.getElementById('fDias').value) || 30;
+            if(!inicioStr) return;
+
+            const dataInicio = new Date(inicioStr + 'T00:00:00');
+            // Fim das férias = data início + (dias - 1) dias
+            let dataFim = new Date(dataInicio);
+            dataFim.setDate(dataInicio.getDate() + diasVal - 1);
+
+            // Retorno = data fim + 1 dia
+            let dataRetorno = new Date(dataFim);
+            dataRetorno.setDate(dataFim.getDate() + 1);
+
+            const fmtFim = dataFim.toISOString().split('T')[0];
+            const fmtRetorno = dataRetorno.toISOString().split('T')[0];
+
+            document.getElementById('calcFimPrev').innerText = `Término (Fim): ${formatarData(fmtFim)}`;
+            document.getElementById('calcRetornoPrev').innerText = `Retorno ao Trabalho: ${formatarData(fmtRetorno)}`;
+            
+            window._tempFim = fmtFim;
+            window._tempRetorno = fmtRetorno;
+        }
+
+        function fecharModalFerias() { document.getElementById('modalFerias').style.display = 'none'; }
+
+        function salvarFerias(e) {
+            e.preventDefault();
+            if(usuarioLogado === 'convidado') return;
+            const inicio = document.getElementById('fInicio').value;
+            const dias = parseInt(document.getElementById('fDias').value);
+            
+            feriasPlan.push({ 
+                colab: document.getElementById('fColabSelect').value, 
+                inicio: inicio, 
+                dias: dias,
+                fim: window._tempFim, 
+                retorno: window._tempRetorno, 
+                situacao: document.getElementById('fSituacao').value 
+            });
+            salvarTudo(); fecharModalFerias(); renderizarFerias(); atualizarAlertaFerias();
+        }
+
+        function excluirFerias(i) {
+            if(usuarioLogado === 'convidado') return;
+            if(confirm('Excluir férias?')) { feriasPlan.splice(i, 1); salvarTudo(); renderizarFerias(); atualizarAlertaFerias(); }
+        }
+
+        // --- SAÚDE ---
+        function renderizarSaude() {
+            const tbody = document.getElementById('tabelaSaude');
+            const thAcoes = document.getElementById('thAcoesSaude');
+            tbody.innerHTML = '';
+            if(usuarioLogado === 'convidado') { thAcoes.style.display = 'none'; } else { thAcoes.style.display = 'table-cell'; }
+
+            saudePlan.forEach((s, idx) => {
+                let acoesHtml = '';
+                if(usuarioLogado !== 'convidado') {
+                    acoesHtml = `
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="editarSaude(${idx})" class="text-blue-600 p-1 hover:bg-blue-50 rounded" title="Editar"><i data-lucide="edit" class="w-3.5 h-3.5 inline"></i></button>
+                            <button onclick="excluirSaude(${idx})" class="text-rose-600 p-1 hover:bg-rose-50 rounded" title="Excluir"><i data-lucide="trash-2" class="w-3.5 h-3.5 inline"></i></button>
+                        </td>
+                    `;
+                }
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b">
+                        <td class="p-3 font-bold">${s.colab}</td>
+                        <td class="p-3">${s.operadora}</td>
+                        <td class="p-3">${s.carteirinha}</td>
+                        <td class="p-3">${s.tipo}</td>
+                        <td class="p-3">${s.dependentes}</td>
+                        <td class="p-3 font-semibold text-slate-700">${formatarMoeda(s.valor)}</td>
+                        ${acoesHtml}
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function abrirModalSaude() {
+            if(usuarioLogado === 'convidado') return;
+            document.getElementById('modalSaudeTitulo').innerText = 'Cadastrar Plano de Saúde';
+            document.getElementById('editIndexSaude').value = '-1';
+            document.getElementById('sColab').value = '';
+            document.getElementById('sOperadora').value = '';
+            document.getElementById('sCarteirinha').value = '';
+            document.getElementById('sTipo').value = 'Enfermaria';
+            document.getElementById('sDependentes').value = '0';
+            document.getElementById('sValor').value = '0.00';
+            document.getElementById('modalSaude').style.display = 'flex';
+        }
+
+        function editarSaude(idx) {
+            if(usuarioLogado === 'convidado') return;
+            const s = saudePlan[idx];
+            document.getElementById('modalSaudeTitulo').innerText = 'Editar Plano de Saúde';
+            document.getElementById('editIndexSaude').value = idx;
+            document.getElementById('sColab').value = s.colab || '';
+            document.getElementById('sOperadora').value = s.operadora || '';
+            document.getElementById('sCarteirinha').value = s.carteirinha || '';
+            document.getElementById('sTipo').value = s.tipo || 'Enfermaria';
+            document.getElementById('sDependentes').value = s.dependentes || 0;
+            document.getElementById('sValor').value = s.valor || 0;
+            document.getElementById('modalSaude').style.display = 'flex';
+        }
+
+        function fecharModalSaude() { document.getElementById('modalSaude').style.display = 'none'; }
+
+        function salvarSaude(e) {
+            e.preventDefault();
+            if(usuarioLogado === 'convidado') return;
+            const idx = parseInt(document.getElementById('editIndexSaude').value);
+            const obj = {
+                colab: document.getElementById('sColab').value,
+                operadora: document.getElementById('sOperadora').value,
+                carteirinha: document.getElementById('sCarteirinha').value,
+                tipo: document.getElementById('sTipo').value,
+                dependentes: Number(document.getElementById('sDependentes').value),
+                valor: Number(document.getElementById('sValor').value)
+            };
+            if(idx === -1) saudePlan.push(obj); else saudePlan[idx] = obj;
+            salvarTudo(); fecharModalSaude(); renderizarSaude();
+        }
+
+        function excluirSaude(idx) {
+            if(usuarioLogado === 'convidado') return;
+            if(confirm('Excluir este registro de plano de saúde?')) {
+                saudePlan.splice(idx, 1);
+                salvarTudo();
+                renderizarSaude();
+            }
+        }
+
+        // --- AVARIAS E DÉBITOS ---
+        function obterAvariasFiltradas() {
+            const busca = (document.getElementById('filtroAvariaBusca')?.value || '').trim().toLowerCase();
+            const de = document.getElementById('filtroAvariaDe')?.value || '';
+            const ate = document.getElementById('filtroAvariaAte')?.value || '';
+            const tipo = document.getElementById('filtroAvariaTipo')?.value || '';
+            const status = document.getElementById('filtroAvariaStatus')?.value || '';
+            return avariasPlan.map((a, idx) => ({...a, _idx: idx})).filter(a => {
+                const data = a.data || '';
+                const texto = [a.colab, a.desc, a.auto, a.tipo, a.status].join(' ').toLowerCase();
+                return (!busca || texto.includes(busca)) && (!de || data >= de) && (!ate || data <= ate) && (!tipo || a.tipo === tipo) && (!status || a.status === status);
+            });
+        }
+        function limparFiltrosAvarias() {
+            ['filtroAvariaBusca','filtroAvariaDe','filtroAvariaAte'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+            ['filtroAvariaTipo','filtroAvariaStatus'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+            renderizarAvarias();
+        }
+        function atualizarGraficosAvarias(registros) {
+            const porTipo={}, porStatus={}, porMes={};
+            registros.forEach(a=>{ const tipo=a.tipo||'Sem categoria', status=a.status||'Sem status', valor=Number(a.custo)||0; porTipo[tipo]=(porTipo[tipo]||0)+1; porStatus[status]=(porStatus[status]||0)+valor; const mes=a.data?a.data.substring(0,7):'Sem data'; porMes[mes]=(porMes[mes]||0)+valor; });
+            const meses=Object.keys(porMes).sort(), labelsMeses=meses.map(m=>m==='Sem data'?m:(m.split('-')[1]+'/'+m.split('-')[0]));
+            const ct=document.getElementById('graficoAvariaTipo')?.getContext('2d');
+            if(ct){if(graficoAvariaTipoInstance)graficoAvariaTipoInstance.destroy();graficoAvariaTipoInstance=new Chart(ct,{type:'doughnut',data:{labels:Object.keys(porTipo),datasets:[{data:Object.values(porTipo)}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});}
+            const cs=document.getElementById('graficoAvariaStatus')?.getContext('2d');
+            if(cs){if(graficoAvariaStatusInstance)graficoAvariaStatusInstance.destroy();graficoAvariaStatusInstance=new Chart(cs,{type:'bar',data:{labels:Object.keys(porStatus),datasets:[{label:'Valor (R$)',data:Object.values(porStatus)}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>formatarMoeda(c.raw)}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}});}
+            const cm=document.getElementById('graficoAvariaMes')?.getContext('2d');
+            if(cm){if(graficoAvariaMesInstance)graficoAvariaMesInstance.destroy();graficoAvariaMesInstance=new Chart(cm,{type:'line',data:{labels:labelsMeses,datasets:[{label:'Débitos (R$)',data:meses.map(m=>porMes[m]),fill:false,tension:.25}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>formatarMoeda(c.raw)}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}});}
+        }
+        function renderizarAvarias() {
+            const tbody=document.getElementById('tabelaAvarias'), thAcoes=document.getElementById('thAcoesAvarias'); if(!tbody)return; tbody.innerHTML='';
+            if(usuarioLogado==='convidado')thAcoes.style.display='none';else thAcoes.style.display='table-cell';
+            const registros=obterAvariasFiltradas(); let totalGeral=0,totalPendente=0,totalLiquidado=0;
+            registros.forEach(a=>{const valor=Number(a.custo)||0;totalGeral+=valor;if(a.status==='Descontado em Folha'||a.status==='Cancelado / Abonado')totalLiquidado+=valor;else totalPendente+=valor;
+                let acoesHtml='';if(usuarioLogado!=='convidado')acoesHtml=`<td class="p-3 text-right space-x-1"><button onclick="editarAvaria(${a._idx})" class="text-blue-600 p-1 hover:bg-blue-50 rounded" title="Editar"><i data-lucide="edit" class="w-3.5 h-3.5 inline"></i></button><button onclick="excluirAvaria(${a._idx})" class="text-rose-600 p-1 hover:bg-rose-50 rounded" title="Excluir"><i data-lucide="trash-2" class="w-3.5 h-3.5 inline"></i></button></td>`;
+                let badgeStatus='<span class="px-2 py-0.5 rounded text-[10px] bg-amber-50 text-amber-700 font-bold">Pendente</span>';if(a.status==='Descontado em Folha')badgeStatus='<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700 font-bold">Descontado</span>';else if(a.status==='Parcelado')badgeStatus='<span class="px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-700 font-bold">Parcelado</span>';else if(a.status==='Cancelado / Abonado')badgeStatus='<span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 font-bold">Abonado</span>';
+                const autoRef=a.auto?`<br><span class="text-[10px] text-slate-400">Ref: ${a.auto}</span>`:'';
+                tbody.innerHTML+=`<tr class="hover:bg-slate-50 border-b"><td class="p-3">${formatarData(a.data)}</td><td class="p-3 font-bold">${a.colab||'-'}</td><td class="p-3">${a.tipo||'-'}</td><td class="p-3">${a.desc||'-'}${autoRef}</td><td class="p-3 font-semibold text-rose-600">${formatarMoeda(valor)}</td><td class="p-3">${badgeStatus}</td>${acoesHtml}</tr>`;
+            });
+            document.getElementById('resumoTotalDebitos').innerText=formatarMoeda(totalGeral);document.getElementById('resumoPendenteDebitos').innerText=formatarMoeda(totalPendente);document.getElementById('resumoLiquidadoDebitos').innerText=formatarMoeda(totalLiquidado);
+            document.getElementById('contadorFiltroAvarias').innerText=`${registros.length} de ${avariasPlan.length} registro(s)`;
+            const temFiltro=['filtroAvariaBusca','filtroAvariaDe','filtroAvariaAte','filtroAvariaTipo','filtroAvariaStatus'].some(id=>(document.getElementById(id)?.value||'')!=='');
+            document.getElementById('textoFiltroAvarias').innerText=temFiltro?'Resultados conforme os filtros selecionados.':'Exibindo todos os registros.';
+            atualizarGraficosAvarias(registros);lucide.createIcons();
+        }
+        // --- GRÁFICOS ---
+        function atualizarGraficos() {
+            let pumaCount = colaboradores.filter(c => c.empresa === 'Puma').length;
+            let omegaCount = colaboradores.filter(c => c.empresa === 'Ômega').length;
+
+            const ctxEmp = document.getElementById('graficoEmpresa').getContext('2d');
+            if (graficoEmpresaInstance) graficoEmpresaInstance.destroy();
+            graficoEmpresaInstance = new Chart(ctxEmp, {
+                type: 'doughnut',
+                data: { labels: ['Puma', 'Ômega'], datasets: [{ data: [pumaCount, omegaCount], backgroundColor: ['#3b82f6', '#10b981'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            });
+
+            let ativos = colaboradores.filter(c => c.status === 'Ativo').length;
+            let ferias = colaboradores.filter(c => c.status === 'Férias').length;
+            let afastado = colaboradores.filter(c => c.status === 'Afastado').length;
+            let aviso = colaboradores.filter(c => c.status === 'Aviso Prévio').length;
+            let demitido = colaboradores.filter(c => c.status === 'Demitido').length;
+
+            const ctxStatus = document.getElementById('graficoStatus').getContext('2d');
+            if (graficoStatusInstance) graficoStatusInstance.destroy();
+            graficoStatusInstance = new Chart(ctxStatus, {
+                type: 'bar',
+                data: { labels: ['Ativo', 'Férias', 'Afastado', 'Aviso Prévio', 'Demitido'], datasets: [{ data: [ativos, ferias, afastado, aviso, demitido], backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#fb7185', '#dc2626'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+        }
+
+        // --- PERFIL DETALHADO ---
+        function abrirPerfilDetalhes(idx) {
+            const c = colaboradores[idx];
+            document.getElementById('detalheNome').innerText = c.nome || '-';
+            document.getElementById('detalheMatricula').innerText = c.matricula || '-';
+            document.getElementById('detalheCpf').innerText = c.cpf || '-';
+            document.getElementById('detalheEmpresa').innerText = c.empresa || '-';
+            document.getElementById('detalheFuncao').innerText = c.funcao || '-';
+            document.getElementById('detalheTomador').innerText = c.tomador || '-';
+            document.getElementById('detalheTelefone').innerText = c.telefone || '-';
+            document.getElementById('detalheStatus').innerText = c.status || 'Ativo';
+            
+            const imgEl = document.getElementById('detalheFoto');
+            imgEl.src = c.foto ? c.foto : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400';
+
+            const linksC = document.getElementById('detalheLinksContainer');
+            linksC.innerHTML = '';
+            if(c.docFicha) linksC.innerHTML += `<span class="px-2.5 py-1 bg-emerald-600 text-white rounded text-xs font-bold">📄 Ficha: ${c.docFicha}</span>`;
+            if(c.docAso) linksC.innerHTML += `<span class="px-2.5 py-1 bg-blue-600 text-white rounded text-xs font-bold">🏥 ASO: ${c.docAso}</span>`;
+            if(c.docCnh) linksC.innerHTML += `<span class="px-2.5 py-1 bg-purple-600 text-white rounded text-xs font-bold">🚗 CNH: ${c.docCnh}</span>`;
+            if(c.linkOutros) linksC.innerHTML += `<a href="${c.linkOutros}" target="_blank" class="px-2.5 py-1 bg-slate-700 text-white rounded text-xs font-bold">📁 Pasta ZIP</a>`;
+
+            document.getElementById('modalPerfilDetalhes').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function fecharModalPerfil() { document.getElementById('modalPerfilDetalhes').style.display = 'none'; }
+
+        // --- OUTRAS UTILIDADES ---
+        function abrirModalEditarAcessos() { document.getElementById('modalEditarAcessos').style.display = 'flex'; lucide.createIcons(); }
+        function fecharModalAcessos() { document.getElementById('modalEditarAcessos').style.display = 'none'; }
+
+        // --- IMPORTAÇÃO DE PLANILHA FONTE PARA ANOMALIAS/AVARIAS ---
+        let registrosImportacaoAvarias = [];
+
+        function abrirImportacaoAvarias() {
+            registrosImportacaoAvarias = [];
+            const f = document.getElementById('arquivoFonteAvarias');
+            const r = document.getElementById('resultadoImportacaoAvarias');
+            const b = document.getElementById('btnConfirmarImportacaoAvarias');
+            if (f) f.value = '';
+            if (r) { r.className = 'hidden'; r.innerHTML = ''; }
+            if (b) b.disabled = true;
+            document.getElementById('modalImportacaoAvarias').style.display='flex';
+            if (window.lucide) lucide.createIcons();
+        }
+        function fecharImportacaoAvarias(){ document.getElementById('modalImportacaoAvarias').style.display='none'; }
+        function normalizarCabecalhoImportacao(v){
+            return String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+        }
+        function acharColunaImportacao(headers, aliases){
+            const hs=headers.map(normalizarCabecalhoImportacao);
+            for(const alias of aliases){ const i=hs.indexOf(normalizarCabecalhoImportacao(alias)); if(i>=0) return headers[i]; }
+            for(let i=0;i<hs.length;i++) if(aliases.some(a=>hs[i].includes(normalizarCabecalhoImportacao(a)))) return headers[i];
+            return null;
+        }
+        function converterDataImportacao(v){
+            if(v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+            if(typeof v === 'number' && window.XLSX && XLSX.SSF){
+                const d=XLSX.SSF.parse_date_code(v); if(d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+            }
+            const x=String(v ?? '').trim();
+            if(!x) return '';
+            let m=x.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+            if(m){ let y=m[3]; if(y.length===2)y='20'+y; return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`; }
+            if(/^\d{4}-\d{2}-\d{2}/.test(x)) return x.slice(0,10);
+            const d=new Date(x); return isNaN(d)?x:d.toISOString().slice(0,10);
+        }
+        function converterValorImportacao(v){
+            if(typeof v==='number') return v;
+            let x=String(v ?? '').trim().replace(/R\$\s?/gi,'').replace(/\./g,'').replace(',','.').replace(/[^0-9.-]/g,'');
+            const n=parseFloat(x); return isNaN(n)?0:n;
+        }
+        function normalizarTipoImportacao(v){
+            const x=normalizarCabecalhoImportacao(v);
+            if(x.includes('multa')) return 'Multa de Trânsito';
+            if(x.includes('avaria')) return 'Avaria de Veículo';
+            if(x.includes('anomalia') || x.includes('operacional')) return 'Anomalia Operacional';
+            return 'Outros Débitos';
+        }
+        function normalizarStatusImportacao(v){
+            const x=normalizarCabecalhoImportacao(v);
+            if(x.includes('descontado') || x.includes('liquidado')) return 'Descontado em Folha';
+            if(x.includes('parcel')) return 'Parcelado';
+            if(x.includes('cancel') || x.includes('abon')) return 'Cancelado / Abonado';
+            return 'Pendente Desconto';
+        }
+        function lerPlanilhaFonteAvarias(event){
+            const file=event.target.files?.[0];
+            if(!file) return;
+            const r=document.getElementById('resultadoImportacaoAvarias');
+            r.className='mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-[11px] text-blue-800';
+            r.innerHTML='Lendo a planilha...';
+            const reader=new FileReader();
+            reader.onload=function(e){
+                try{
+                    const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+                    const ws=wb.Sheets[wb.SheetNames[0]];
+                    const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+                    if(!rows.length) throw new Error('A planilha não possui registros na primeira aba.');
+                    const headers=Object.keys(rows[0]);
+                    const cData=acharColunaImportacao(headers,['Data','Data da Ocorrência','Data Ocorrencia','Dt Ocorrencia']);
+                    const cColab=acharColunaImportacao(headers,['Colaborador','Nome','Motorista','Funcionário','Funcionario','Empregado']);
+                    const cTipo=acharColunaImportacao(headers,['Categoria','Tipo','Tipo de Ocorrência','Tipo Ocorrencia']);
+                    const cAuto=acharColunaImportacao(headers,['Auto','Ref','Referência','Referencia','Numero da Multa','Número da Multa','Placa']);
+                    const cDesc=acharColunaImportacao(headers,['Descrição','Descricao','Ocorrência','Ocorrencia','Motivo','Detalhamento']);
+                    const cValor=acharColunaImportacao(headers,['Valor','Valor do Débito','Valor Debito','Custo','Valor R$']);
+                    const cStatus=acharColunaImportacao(headers,['Status','Situação','Situacao','Status da Cobrança','Status Cobranca']);
+                    if(!cColab || !cDesc || !cValor) throw new Error('Não encontrei as colunas mínimas. A planilha precisa ter pelo menos Colaborador/Nome, Descrição e Valor/Custo.');
+                    registrosImportacaoAvarias=rows.map(row=>({
+                        data: converterDataImportacao(cData?row[cData]:''),
+                        colab: String(row[cColab]??'').trim(),
+                        tipo: normalizarTipoImportacao(cTipo?row[cTipo]:''),
+                        auto: String(cAuto?row[cAuto]:'').trim(),
+                        desc: String(row[cDesc]??'').trim(),
+                        custo: converterValorImportacao(row[cValor]),
+                        status: normalizarStatusImportacao(cStatus?row[cStatus]:'')
+                    })).filter(a=>a.colab && a.desc);
+                    const b=document.getElementById('btnConfirmarImportacaoAvarias');
+                    b.disabled=!registrosImportacaoAvarias.length;
+                    r.className='mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-[11px] text-emerald-800';
+                    r.innerHTML=`<b>${registrosImportacaoAvarias.length}</b> registro(s) identificado(s) na primeira aba de <b>${file.name}</b>.<br><span class="text-emerald-700">Colaborador: ${cColab||'não encontrado'} · Data: ${cData||'não encontrada'} · Categoria: ${cTipo||'não encontrada'} · Valor: ${cValor||'não encontrado'} · Status: ${cStatus||'não encontrado'}</span>`;
+                }catch(err){
+                    registrosImportacaoAvarias=[]; document.getElementById('btnConfirmarImportacaoAvarias').disabled=true;
+                    r.className='mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-[11px] text-red-800'; r.innerHTML='<b>Não foi possível importar:</b> '+err.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        function confirmarImportacaoAvarias(){
+            if(!registrosImportacaoAvarias.length) return;
+            let adicionados=0, duplicados=0;
+            const chave=a=>[a.data,a.colab,a.auto,a.desc,a.custo].join('|').toLowerCase();
+            const existentes=new Set(avariasPlan.map(chave));
+            registrosImportacaoAvarias.forEach(a=>{ if(existentes.has(chave(a))) duplicados++; else { avariasPlan.push(a); existentes.add(chave(a)); adicionados++; } });
+            salvarTudo(); renderizarAvarias(); fecharImportacaoAvarias();
+            alert(`Importação concluída!\n\nAdicionados: ${adicionados}\nDuplicados ignorados: ${duplicados}`);
+        }
+
+        function exportarRelatorioDebitos() {
+            let csv = "Data,Colaborador,Categoria,Auto_Ref,Descricao,Valor,Status\n";
+            avariasPlan.forEach(a => {
+                csv += '"' + (a.data || '') + '","' + (a.colab || '') + '","' + (a.tipo || '') + '","' + (a.auto || '') + '","' + (a.desc || '') + '","' + (a.custo || 0) + '","' + (a.status || 'Pendente') + '"\n';
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'relatorio_debitos_multas.csv'; a.click();
+        }
+
+        function exportarDados() {
+            let csv = "Matricula,Nome,Empresa,Funcao,Tomador,CPF,Status,TipoASO,ValidadeASO\n";
+            colaboradores.forEach(c => {
+                csv += '"' + (c.matricula || '') + '","' + (c.nome || '') + '","' + (c.empresa || '') + '","' + (c.funcao || '') + '","' + (c.tomador || '') + '","' + (c.cpf || '') + '","' + (c.status || '') + '","' + (c.tipoAso || '') + '","' + (c.validadeAso || '') + '"\n';
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'op_dados_atualizado.csv'; a.click();
+        }
+
+        function fazerBackup() {
+            const data = { colaboradores, feriasPlan, avariasPlan, saudePlan };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'op_backup_atualizado.json'; a.click();
+        }
+
+        function restaurarBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dados = JSON.parse(e.target.result);
+                    if (dados.colaboradores) colaboradores = dados.colaboradores;
+                    if (dados.feriasPlan) feriasPlan = dados.feriasPlan;
+                    if (dados.avariasPlan) avariasPlan = dados.avariasPlan;
+                    if (dados.saudePlan) saudePlan = dados.saudePlan;
+                    salvarTudo();
+                    renderizarTudo();
+                    alert('Backup restaurado com sucesso!');
+                } catch(err) {
+                    alert('Erro ao ler o arquivo de backup.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function filtrarAlertas() { alert('Exibindo colaboradores com pendências e exames ASO vencidos.'); }
+    </script>
+</body>
+</html>
